@@ -25,7 +25,7 @@ export function LinkPreview({
     as = "a",
 }: LinkPreviewProps) {
     const [isVisible, setIsVisible] = React.useState(false);
-    const [isLoading, setIsLoading] = React.useState(true);
+    // const [isLoading, setIsLoading] = React.useState(true);
     const [hasPopped, setHasPopped] = React.useState(false);
     const [mousePosition, setMousePosition] = React.useState({ x: 0, y: 0 });
     const previewRef = React.useRef<HTMLDivElement>(null);
@@ -142,7 +142,7 @@ export function LinkPreview({
                                     height={height}
                                     className="h-full w-full rounded-lg object-cover"
                                     alt="preview"
-                                    onLoad={() => setIsLoading(false)}
+                                // onLoad={() => setIsLoading(false)}
                                 />
                             </div>
                         </div>

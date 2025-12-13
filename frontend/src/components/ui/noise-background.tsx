@@ -19,7 +19,7 @@ export function NoiseBackground({
 }: NoiseBackgroundProps) {
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const rendererRef = useRef<Renderer | null>(null);
-    const animationRef = useRef<number | null>(null);
+    // const animationRef = useRef<number | null>(null);
     const sceneRef = useRef<Transform | null>(null);
     const meshRef = useRef<Mesh | null>(null);
     const cameraRef = useRef<Camera | null>(null);
@@ -27,7 +27,7 @@ export function NoiseBackground({
 
     useEffect(() => {
         // Update uniforms when props change
-        const mesh = meshRef.value;
+        const mesh = meshRef.current;
         if (mesh && mesh.program && mesh.program.uniforms) {
             if (mesh.program.uniforms.u_hue) mesh.program.uniforms.u_hue.value = hue;
             if (mesh.program.uniforms.u_saturation) mesh.program.uniforms.u_saturation.value = saturation;

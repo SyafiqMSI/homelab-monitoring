@@ -172,6 +172,7 @@ export interface Service {
     status: string; // online, offline, error, disabled, unknown
     statusCode: number;
     responseTime: number;
+    uptimePercent: number;
     lastCheck: string;
     isActive: boolean;
 }

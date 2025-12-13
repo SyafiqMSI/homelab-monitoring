@@ -1,7 +1,7 @@
 import { cn } from "@/lib/utils";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
+// import { Progress } from "@/components/ui/progress";
 import {
     Tooltip,
     TooltipContent,
@@ -85,7 +85,7 @@ export function ServiceCard({ service, className }: ServiceCardProps) {
 
     const isHealthy = service.status === "healthy";
     const statusParts = getStatusColor().split(" ");
-    const textColor = statusParts[0];
+    // const textColor = statusParts[0];
     const bgColor = statusParts[1];
 
     return (
