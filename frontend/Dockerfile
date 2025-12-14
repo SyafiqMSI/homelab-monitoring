@@ -7,6 +7,14 @@ RUN bun install --frozen-lockfile
 
 COPY . .
 
+# Accept build arguments
+ARG VITE_API_URL
+ARG VITE_WS_URL
+
+# Set environment variables for build time
+ENV VITE_API_URL=$VITE_API_URL
+ENV VITE_WS_URL=$VITE_WS_URL
+
 RUN bun run build
 
 FROM nginx:alpine
