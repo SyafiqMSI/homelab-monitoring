@@ -130,6 +130,7 @@ func main() {
 			protected.PUT("/devices/:id", deviceHandler.UpdateDevice)
 			protected.DELETE("/devices/:id", deviceHandler.DeleteDevice)
 			protected.GET("/devices/:id/ping", deviceHandler.PingDevice)
+			protected.POST("/devices/:id/wake", deviceHandler.WakeDevice)
 
 			// Services
 			protected.GET("/services", serviceHandler.GetServices)

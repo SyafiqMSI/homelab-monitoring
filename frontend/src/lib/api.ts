@@ -427,6 +427,10 @@ class ApiClient {
         return this.request<{ online: boolean }>(`/devices/${id}/ping`);
     }
 
+    async wakeDevice(id: number): Promise<void> {
+        await this.request(`/devices/${id}/wake`, { method: "POST" });
+    }
+
     // Services
     async getServices(refresh = false): Promise<Service[]> {
         const query = refresh ? "?refresh=true" : "";

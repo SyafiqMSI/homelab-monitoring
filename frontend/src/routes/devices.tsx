@@ -60,6 +60,7 @@ import {
     WifiOff,
     Loader2,
     MapPin,
+    Power,
 } from "lucide-react";
 
 export const Route = createFileRoute("/devices")({
@@ -275,6 +276,15 @@ function DevicesPage() {
         }
     };
 
+    const handleWake = async (deviceId: number) => {
+        try {
+            await api.wakeDevice(deviceId);
+            toast.success("Wake-on-LAN packet sent");
+        } catch (error) {
+            toast.error("Failed to send Wake-on-LAN packet");
+        }
+    };
+
     const getDeviceIcon = (type: string) => {
         const Icon = deviceIcons[type] || HelpCircle;
         return Icon;
@@ -469,6 +479,12 @@ function DevicesPage() {
                                                         <Pencil className="h-4 w-4 mr-2" />
                                                         Edit
                                                     </DropdownMenuItem>
+                                                    {device.name === "Gaming PC" && (
+                                                        <DropdownMenuItem onClick={() => handleWake(device.id)}>
+                                                            <Power className="h-4 w-4 mr-2" />
+                                                            Turn On
+                                                        </DropdownMenuItem>
+                                                    )}
                                                     <DropdownMenuSeparator />
                                                     <DropdownMenuItem
                                                         onClick={() => handleDelete(device)}

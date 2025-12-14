@@ -192,6 +192,54 @@ func (s *DeviceService) PingDevice(id uint, userID uint) (bool, error) {
 	return isOnline, nil
 }
 
+// WakeDevice sends a Wake-on-LAN magic packet to the device
+func (s *DeviceService) WakeDevice(id uint, userID uint) error {
+	var device models.Device
+	if err := s.db.Where("id = ? AND user_id = ?", id, userID).First(&device).Error; err != nil {
+		return fmt.Errorf("device not found")
+	}
+
+	if device.MAC == "" {
+		return fmt.Errorf("device has no MAC address")
+	}
+
+	macAddr, err := net.ParseMAC(device.MAC)
+	if err != nil {
+		return fmt.Errorf("invalid MAC address: %v", err)
+	}
+
+	// Construct magic packet
+	// 6 bytes of 0xFF
+	packet := []byte{0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF}
+	// 16 repetitions of MAC address
+	for i := 0; i < 16; i++ {
+		packet = append(packet, macAddr...)
+	}
+
+	// Send to broadcast address on port 9
+	// Try multiple ports (7 and 9)
+	ports := []string{"7", "9"}
+	for _, port := range ports {
+		addr, err := net.ResolveUDPAddr("udp", "255.255.255.255:"+port)
+		if err != nil {
+			continue
+		}
+
+		conn, err := net.DialUDP("udp", nil, addr)
+		if err != nil {
+			continue
+		}
+
+		_, err = conn.Write(packet)
+		conn.Close()
+		if err != nil {
+			continue
+		}
+	}
+
+	return nil
+}
+
 // pingDeviceFast performs a quick TCP ping with common ports including CCTV
 func (s *DeviceService) pingDeviceFast(ip string) bool {
 	// Common ports to check:

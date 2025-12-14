@@ -143,6 +143,23 @@ func (h *DeviceHandler) PingDevice(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"online": isOnline})
 }
 
+// WakeDevice sends a Wake-on-LAN packet to the device
+func (h *DeviceHandler) WakeDevice(c *gin.Context) {
+	userID := middleware.GetUserID(c)
+	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid device ID"})
+		return
+	}
+
+	if err := h.deviceService.WakeDevice(uint(id), userID); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Wake-on-LAN packet sent"})
+}
+
 // GetDeviceTypes returns available device types
 func (h *DeviceHandler) GetDeviceTypes(c *gin.Context) {
 	types := []map[string]string{
