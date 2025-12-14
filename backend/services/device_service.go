@@ -3,6 +3,8 @@ package services
 import (
 	"fmt"
 	"net"
+	"os/exec"
+	"runtime"
 	"sync"
 	"time"
 
@@ -241,6 +243,7 @@ func (s *DeviceService) WakeDevice(id uint, userID uint) error {
 }
 
 // pingDeviceFast performs a quick TCP ping with common ports including CCTV
+// Falls back to ICMP ping if all TCP ports fail
 func (s *DeviceService) pingDeviceFast(ip string) bool {
 	// Common ports to check:
 	// - 80, 443, 8080: HTTP/HTTPS
@@ -280,7 +283,24 @@ func (s *DeviceService) pingDeviceFast(ip string) bool {
 		}
 	}
 
-	return false
+	// Fallback: Try ICMP ping if all TCP ports failed
+	return s.icmpPing(ip)
+}
+
+// icmpPing performs an ICMP ping using the system ping command
+func (s *DeviceService) icmpPing(ip string) bool {
+	// Use ping command with 1 packet and short timeout
+	// Linux: ping -c 1 -W 1 <ip>
+	// Windows: ping -n 1 -w 1000 <ip>
+	var cmd *exec.Cmd
+	if runtime.GOOS == "windows" {
+		cmd = exec.Command("ping", "-n", "1", "-w", "1000", ip)
+	} else {
+		cmd = exec.Command("ping", "-c", "1", "-W", "1", ip)
+	}
+
+	err := cmd.Run()
+	return err == nil
 }
 
 // getDefaultIcon returns the default icon for a device type
