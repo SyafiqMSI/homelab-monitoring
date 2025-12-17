@@ -479,7 +479,7 @@ function DevicesPage() {
                                                         <Pencil className="h-4 w-4 mr-2" />
                                                         Edit
                                                     </DropdownMenuItem>
-                                                    {device.name === "Gaming PC" && (
+                                                    {device.type === "pc" && (
                                                         <DropdownMenuItem onClick={() => handleWake(device.id)}>
                                                             <Power className="h-4 w-4 mr-2" />
                                                             Turn On
