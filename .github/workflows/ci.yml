@@ -42,5 +42,17 @@ jobs:
             VITE_API_URL=${{ secrets.VITE_API_URL }}
             VITE_WS_URL=${{ secrets.VITE_WS_URL }}
           tags: |
-            ${{ secrets.DOCKER_USERNAME }}/homelab-frontend:latest
-            ${{ secrets.DOCKER_USERNAME }}/homelab-frontend:${{ github.sha }}
+            ${{ secrets.DOCKER_USERNAME }}/${{ secrets.HOMELAB_IMAGE }}:latest
+            ${{ secrets.DOCKER_USERNAME }}/${{ secrets.HOMELAB_IMAGE }}:${{ github.sha }}
+
+      - name: Build and push Frontend Labkom
+        uses: docker/build-push-action@v5
+        with:
+          context: ./frontend
+          push: true
+          build-args: |
+            VITE_API_URL=${{ secrets.VITE_API_URL_LABKOM }}
+            VITE_WS_URL=${{ secrets.VITE_WS_URL_LABKOM }}
+          tags: |
+            ${{ secrets.DOCKER_USERNAME }}/${{ secrets.LABKOM_IMAGE }}:latest
+            ${{ secrets.DOCKER_USERNAME }}/${{ secrets.LABKOM_IMAGE }}:${{ github.sha }}
