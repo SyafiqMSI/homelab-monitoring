@@ -61,6 +61,7 @@ import {
     Loader2,
     MapPin,
     Power,
+    PowerOff,
 } from "lucide-react";
 
 export const Route = createFileRoute("/devices")({
@@ -116,6 +117,10 @@ function DevicesPage() {
         model: "",
         location: "",
         description: "",
+        // SSH fields for remote shutdown
+        sshUser: "",
+        sshPassword: "",
+        sshPort: 22,
     });
 
     const fetchDevices = useCallback(async () => {
@@ -183,6 +188,9 @@ function DevicesPage() {
             model: "",
             location: "",
             description: "",
+            sshUser: "",
+            sshPassword: "",
+            sshPort: 22,
         });
     };
 
@@ -202,6 +210,9 @@ function DevicesPage() {
             model: device.model || "",
             location: device.location || "",
             description: device.description || "",
+            sshUser: device.sshUser || "",
+            sshPassword: device.sshPassword || "",
+            sshPort: device.sshPort || 22,
         });
         setIsEditDialogOpen(true);
     };
@@ -282,6 +293,17 @@ function DevicesPage() {
             toast.success("Wake-on-LAN packet sent");
         } catch (error) {
             toast.error("Failed to send Wake-on-LAN packet");
+        }
+    };
+
+    const handleShutdown = async (deviceId: number) => {
+        try {
+            await api.shutdownDevice(deviceId);
+            toast.success("Shutdown command sent");
+            // Refresh devices after a short delay to update status
+            setTimeout(() => fetchDevices(), 5000);
+        } catch (error) {
+            toast.error("Failed to send shutdown command. Make sure SSH credentials are configured.");
         }
     };
 
@@ -480,10 +502,20 @@ function DevicesPage() {
                                                         Edit
                                                     </DropdownMenuItem>
                                                     {device.type === "pc" && (
-                                                        <DropdownMenuItem onClick={() => handleWake(device.id)}>
-                                                            <Power className="h-4 w-4 mr-2" />
-                                                            Turn On
-                                                        </DropdownMenuItem>
+                                                        <>
+                                                            {!device.isOnline && (
+                                                                <DropdownMenuItem onClick={() => handleWake(device.id)}>
+                                                                    <Power className="h-4 w-4 mr-2" />
+                                                                    Turn On
+                                                                </DropdownMenuItem>
+                                                            )}
+                                                            {device.isOnline && (
+                                                                <DropdownMenuItem onClick={() => handleShutdown(device.id)}>
+                                                                    <PowerOff className="h-4 w-4 mr-2" />
+                                                                    Turn Off
+                                                                </DropdownMenuItem>
+                                                            )}
+                                                        </>
                                                     )}
                                                     <DropdownMenuSeparator />
                                                     <DropdownMenuItem
@@ -636,6 +668,47 @@ function DevicesPage() {
                                 placeholder="Optional description"
                             />
                         </div>
+                        {/* SSH Settings for PC - enables Turn Off feature */}
+                        {formData.type === "pc" && (
+                            <>
+                                <div className="border-t pt-4 mt-4">
+                                    <p className="text-sm text-muted-foreground mb-3">
+                                        SSH Settings (optional - enables Turn Off feature)
+                                    </p>
+                                    <div className="grid grid-cols-3 gap-4">
+                                        <div className="space-y-2">
+                                            <Label htmlFor="sshUser">SSH User</Label>
+                                            <Input
+                                                id="sshUser"
+                                                value={formData.sshUser}
+                                                onChange={(e) => setFormData({ ...formData, sshUser: e.target.value })}
+                                                placeholder="root"
+                                            />
+                                        </div>
+                                        <div className="space-y-2">
+                                            <Label htmlFor="sshPassword">SSH Password</Label>
+                                            <Input
+                                                id="sshPassword"
+                                                type="password"
+                                                value={formData.sshPassword}
+                                                onChange={(e) => setFormData({ ...formData, sshPassword: e.target.value })}
+                                                placeholder="********"
+                                            />
+                                        </div>
+                                        <div className="space-y-2">
+                                            <Label htmlFor="sshPort">SSH Port</Label>
+                                            <Input
+                                                id="sshPort"
+                                                type="number"
+                                                value={formData.sshPort}
+                                                onChange={(e) => setFormData({ ...formData, sshPort: parseInt(e.target.value) || 22 })}
+                                                placeholder="22"
+                                            />
+                                        </div>
+                                    </div>
+                                </div>
+                            </>
+                        )}
                     </div>
                     <DialogFooter>
                         <Button variant="outline" onClick={() => setIsAddDialogOpen(false)}>
@@ -737,6 +810,47 @@ function DevicesPage() {
                                 onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                             />
                         </div>
+                        {/* SSH Settings for PC - enables Turn Off feature */}
+                        {formData.type === "pc" && (
+                            <>
+                                <div className="border-t pt-4 mt-4">
+                                    <p className="text-sm text-muted-foreground mb-3">
+                                        SSH Settings (optional - enables Turn Off feature)
+                                    </p>
+                                    <div className="grid grid-cols-3 gap-4">
+                                        <div className="space-y-2">
+                                            <Label htmlFor="edit-sshUser">SSH User</Label>
+                                            <Input
+                                                id="edit-sshUser"
+                                                value={formData.sshUser}
+                                                onChange={(e) => setFormData({ ...formData, sshUser: e.target.value })}
+                                                placeholder="root"
+                                            />
+                                        </div>
+                                        <div className="space-y-2">
+                                            <Label htmlFor="edit-sshPassword">SSH Password</Label>
+                                            <Input
+                                                id="edit-sshPassword"
+                                                type="password"
+                                                value={formData.sshPassword}
+                                                onChange={(e) => setFormData({ ...formData, sshPassword: e.target.value })}
+                                                placeholder="********"
+                                            />
+                                        </div>
+                                        <div className="space-y-2">
+                                            <Label htmlFor="edit-sshPort">SSH Port</Label>
+                                            <Input
+                                                id="edit-sshPort"
+                                                type="number"
+                                                value={formData.sshPort}
+                                                onChange={(e) => setFormData({ ...formData, sshPort: parseInt(e.target.value) || 22 })}
+                                                placeholder="22"
+                                            />
+                                        </div>
+                                    </div>
+                                </div>
+                            </>
+                        )}
                     </div>
                     <DialogFooter>
                         <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>

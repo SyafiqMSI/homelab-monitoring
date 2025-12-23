@@ -79,6 +79,10 @@ func (s *DeviceService) GetDevice(id uint, userID uint) (*models.Device, error) 
 
 // CreateDevice creates a new device
 func (s *DeviceService) CreateDevice(userID uint, req models.CreateDeviceRequest) (*models.Device, error) {
+	sshPort := req.SSHPort
+	if sshPort == 0 {
+		sshPort = 22
+	}
 	device := models.Device{
 		UserID:      userID,
 		Name:        req.Name,
@@ -90,6 +94,9 @@ func (s *DeviceService) CreateDevice(userID uint, req models.CreateDeviceRequest
 		Icon:        req.Icon,
 		Location:    req.Location,
 		Description: req.Description,
+		SSHUser:     req.SSHUser,
+		SSHPassword: req.SSHPassword,
+		SSHPort:     sshPort,
 		IsActive:    true,
 		IsOnline:    false, // Will be updated when user pings
 	}
@@ -153,6 +160,15 @@ func (s *DeviceService) UpdateDevice(id uint, userID uint, req models.UpdateDevi
 	}
 	if req.IsActive != nil {
 		device.IsActive = *req.IsActive
+	}
+	if req.SSHUser != nil {
+		device.SSHUser = *req.SSHUser
+	}
+	if req.SSHPassword != nil {
+		device.SSHPassword = *req.SSHPassword
+	}
+	if req.SSHPort != nil {
+		device.SSHPort = *req.SSHPort
 	}
 
 	if err := s.db.Save(&device).Error; err != nil {
@@ -240,6 +256,117 @@ func (s *DeviceService) WakeDevice(id uint, userID uint) error {
 	}
 
 	return nil
+}
+
+// ShutdownDevice sends a shutdown command to the device via SSH or system command
+func (s *DeviceService) ShutdownDevice(id uint, userID uint) error {
+	var device models.Device
+	if err := s.db.Where("id = ? AND user_id = ?", id, userID).First(&device).Error; err != nil {
+		return fmt.Errorf("device not found")
+	}
+
+	// Check if device is online first
+	if !s.pingDeviceFast(device.IP) {
+		return fmt.Errorf("device is offline")
+	}
+
+	// For Windows PC, try using net rpc shutdown (no SSH required if on same domain)
+	// For Linux/Mac, use SSH
+	if device.SSHUser != "" && device.SSHPassword != "" {
+		return s.shutdownViaSSH(device)
+	}
+
+	// Try Windows RPC shutdown as fallback (works for Windows PCs on same network)
+	return s.shutdownViaRPC(device)
+}
+
+// shutdownViaSSH sends shutdown command via SSH
+func (s *DeviceService) shutdownViaSSH(device models.Device) error {
+	port := device.SSHPort
+	if port == 0 {
+		port = 22
+	}
+
+	// Use sshpass for password authentication (simpler than Go SSH library)
+	// Determine shutdown command based on common OS types
+	// Try Linux shutdown first (works for most Linux/Mac)
+	var cmd *exec.Cmd
+	if runtime.GOOS == "windows" {
+		// From Windows, use plink (PuTTY) or ssh if available
+		// Try native Windows SSH client first
+		sshCmd := fmt.Sprintf("echo y | plink -ssh -pw %s %s@%s -P %d \"sudo shutdown -h now\" 2>&1 || ssh -o StrictHostKeyChecking=no -o ConnectTimeout=10 %s@%s -p %d \"sudo shutdown -h now\" 2>&1",
+			device.SSHPassword, device.SSHUser, device.IP, port,
+			device.SSHUser, device.IP, port)
+		cmd = exec.Command("cmd", "/C", sshCmd)
+	} else {
+		// From Linux/Mac, use sshpass
+		cmd = exec.Command("sshpass", "-p", device.SSHPassword,
+			"ssh", "-o", "StrictHostKeyChecking=no", "-o", "ConnectTimeout=10",
+			fmt.Sprintf("%s@%s", device.SSHUser, device.IP),
+			"-p", fmt.Sprintf("%d", port),
+			"sudo shutdown -h now")
+	}
+
+	// Run with timeout
+	done := make(chan error, 1)
+	go func() {
+		done <- cmd.Run()
+	}()
+
+	select {
+	case err := <-done:
+		// SSH might return error because connection drops on shutdown, which is expected
+		if err != nil {
+			// Check if it's a connection drop (expected on successful shutdown)
+			errStr := err.Error()
+			if !contains(errStr, "closed") && !contains(errStr, "Connection") && !contains(errStr, "exit status") {
+				return fmt.Errorf("SSH shutdown failed: %v", err)
+			}
+		}
+		return nil
+	case <-time.After(15 * time.Second):
+		return fmt.Errorf("shutdown command timed out")
+	}
+}
+
+// shutdownViaRPC uses Windows net rpc or shutdown command for remote Windows PCs
+func (s *DeviceService) shutdownViaRPC(device models.Device) error {
+	if runtime.GOOS != "windows" {
+		return fmt.Errorf("RPC shutdown only available from Windows to Windows devices")
+	}
+
+	// Try Windows remote shutdown command
+	// shutdown /s /m \\<IP> /t 0 /f
+	cmd := exec.Command("shutdown", "/s", "/m", fmt.Sprintf("\\\\%s", device.IP), "/t", "0", "/f")
+
+	done := make(chan error, 1)
+	go func() {
+		done <- cmd.Run()
+	}()
+
+	select {
+	case err := <-done:
+		if err != nil {
+			return fmt.Errorf("RPC shutdown failed: %v (ensure you have admin access to remote PC)", err)
+		}
+		return nil
+	case <-time.After(10 * time.Second):
+		return fmt.Errorf("shutdown command timed out")
+	}
+}
+
+// Helper function to check if string contains substring
+func contains(s, substr string) bool {
+	return len(s) >= len(substr) && (s == substr || len(s) > 0 && containsHelper(s, substr))
+}
+
+func containsHelper(s, substr string) bool {
+	for i := 0; i <= len(s)-len(substr); i++ {
+		if s[i:i+len(substr)] == substr {
+			return true
+		}
+	}
+	return false
 }
 
 // pingDeviceFast performs a quick TCP ping with common ports including CCTV

@@ -174,3 +174,20 @@ func (h *DeviceHandler) GetDeviceTypes(c *gin.Context) {
 	}
 	c.JSON(http.StatusOK, types)
 }
+
+// ShutdownDevice sends a shutdown command to the device
+func (h *DeviceHandler) ShutdownDevice(c *gin.Context) {
+	userID := middleware.GetUserID(c)
+	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid device ID"})
+		return
+	}
+
+	if err := h.deviceService.ShutdownDevice(uint(id), userID); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Shutdown command sent"})
+}

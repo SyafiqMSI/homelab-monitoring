@@ -131,6 +131,7 @@ func main() {
 			protected.DELETE("/devices/:id", deviceHandler.DeleteDevice)
 			protected.GET("/devices/:id/ping", deviceHandler.PingDevice)
 			protected.POST("/devices/:id/wake", deviceHandler.WakeDevice)
+			protected.POST("/devices/:id/shutdown", deviceHandler.ShutdownDevice)
 
 			// Services
 			protected.GET("/services", serviceHandler.GetServices)

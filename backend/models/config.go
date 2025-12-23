@@ -8,20 +8,24 @@ import (
 
 // Device represents a network device (PC, Server, Phone, CCTV, etc.)
 type Device struct {
-	ID          uint           `json:"id" gorm:"primaryKey"`
-	UserID      uint           `json:"userId" gorm:"not null;index"`
-	Name        string         `json:"name" gorm:"size:255;not null"`
-	IP          string         `json:"ip" gorm:"size:50;not null"`
-	MAC         string         `json:"mac" gorm:"size:20"`
-	Type        string         `json:"type" gorm:"size:50"` // pc, server, phone, cctv, router, other
-	Brand       string         `json:"brand" gorm:"size:100"`
-	Model       string         `json:"model" gorm:"size:100"`
-	Icon        string         `json:"icon" gorm:"size:100"`
-	Location    string         `json:"location" gorm:"size:255"`
-	Description string         `json:"description" gorm:"size:500"`
-	IsOnline    bool           `json:"isOnline" gorm:"default:false"`
-	LastSeen    *time.Time     `json:"lastSeen"`
-	IsActive    bool           `json:"isActive" gorm:"default:true"`
+	ID          uint       `json:"id" gorm:"primaryKey"`
+	UserID      uint       `json:"userId" gorm:"not null;index"`
+	Name        string     `json:"name" gorm:"size:255;not null"`
+	IP          string     `json:"ip" gorm:"size:50;not null"`
+	MAC         string     `json:"mac" gorm:"size:20"`
+	Type        string     `json:"type" gorm:"size:50"` // pc, server, phone, cctv, router, other
+	Brand       string     `json:"brand" gorm:"size:100"`
+	Model       string     `json:"model" gorm:"size:100"`
+	Icon        string     `json:"icon" gorm:"size:100"`
+	Location    string     `json:"location" gorm:"size:255"`
+	Description string     `json:"description" gorm:"size:500"`
+	IsOnline    bool       `json:"isOnline" gorm:"default:false"`
+	LastSeen    *time.Time `json:"lastSeen"`
+	IsActive    bool       `json:"isActive" gorm:"default:true"`
+	// SSH fields for remote shutdown
+	SSHUser     string         `json:"sshUser" gorm:"size:100"`
+	SSHPassword string         `json:"sshPassword,omitempty" gorm:"size:255"`
+	SSHPort     int            `json:"sshPort" gorm:"default:22"`
 	CreatedAt   time.Time      `json:"createdAt"`
 	UpdatedAt   time.Time      `json:"updatedAt"`
 	DeletedAt   gorm.DeletedAt `json:"-" gorm:"index"`
@@ -63,6 +67,10 @@ type CreateDeviceRequest struct {
 	Icon        string `json:"icon"`
 	Location    string `json:"location"`
 	Description string `json:"description"`
+	// SSH fields for remote shutdown
+	SSHUser     string `json:"sshUser"`
+	SSHPassword string `json:"sshPassword"`
+	SSHPort     int    `json:"sshPort"`
 }
 
 // UpdateDeviceRequest for updating a device
@@ -77,4 +85,8 @@ type UpdateDeviceRequest struct {
 	Location    *string `json:"location"`
 	Description *string `json:"description"`
 	IsActive    *bool   `json:"isActive"`
+	// SSH fields for remote shutdown
+	SSHUser     *string `json:"sshUser"`
+	SSHPassword *string `json:"sshPassword"`
+	SSHPort     *int    `json:"sshPort"`
 }

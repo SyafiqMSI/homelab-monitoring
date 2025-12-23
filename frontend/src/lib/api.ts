@@ -128,6 +128,10 @@ export interface Device {
     isOnline: boolean;
     lastSeen?: string;
     isActive: boolean;
+    // SSH fields for remote shutdown
+    sshUser?: string;
+    sshPassword?: string;
+    sshPort?: number;
     createdAt: string;
     updatedAt: string;
 }
@@ -142,6 +146,10 @@ export interface CreateDeviceRequest {
     icon?: string;
     location?: string;
     description?: string;
+    // SSH fields for remote shutdown
+    sshUser?: string;
+    sshPassword?: string;
+    sshPort?: number;
 }
 
 export interface Server {
@@ -429,6 +437,10 @@ class ApiClient {
 
     async wakeDevice(id: number): Promise<void> {
         await this.request(`/devices/${id}/wake`, { method: "POST" });
+    }
+
+    async shutdownDevice(id: number): Promise<void> {
+        await this.request(`/devices/${id}/shutdown`, { method: "POST" });
     }
 
     // Services
